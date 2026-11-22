@@ -1,0 +1,51 @@
+
+export const initialTasks = [
+    {
+        id: 1,
+        title: "Complete React routing assignment",
+        category: "Programming",
+        dueDate: "2026-11-23",
+        priority: "High",
+        completed: false,
+    },
+    {
+        id: 2,
+        title: "Revise Intermediate Accounting",
+        category: "University",
+        dueDate: "2026-11-24",
+        priority: "High",
+        completed: false,
+    },
+    {
+        id: 3,
+        title: "Practise JavaScript array methods",
+        category: "Programming",
+        dueDate: "2026-11-25",
+        priority: "Medium",
+        completed: false,
+    },
+    {
+        id: 4,
+        title: "Read React Hooks documentation",
+        category: "Reading",
+        dueDate: "2026-11-26",
+        priority: "Medium",
+        completed: true,
+    },
+    {
+        id: 5,
+        title: "Review previous lecture notes",
+        category: "Revision",
+        dueDate: "2026-11-27",
+        priority: "Low",
+        completed: false,
+    },
+    {
+        id: 6,
+        title: "Practise React component design",
+        category: "Programming",
+        dueDate: "2026-11-28",
+        priority: "High",
+        completed: false,
+    },
+];
