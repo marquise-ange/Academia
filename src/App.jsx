@@ -1,11 +1,17 @@
 
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import TasksPage from "./pages/TasksPage";
+
+import { TaskProvider } from "./context/TaskContext";
+import { ThemeProvider } from "./context/ThemeContext";
+import { NotificationProvider } from "./context/NotificationContext";
+import { ToastProvider } from "./context/ToastContext";
+
 import SiteLayout from "./layouts/SiteLayout";
+
+import DashboardPage from "./pages/DashboardPage";
+import TasksPage from "./pages/TasksPage";
 import FocusPage from "./pages/FocusPage";
 import SettingsPage from "./pages/SettingsPage";
-import DashboardPage from "./pages/DashboardPage";
-import { TaskProvider } from "./context/TaskContext";
 
 function NotFoundPage() {
   return (
@@ -23,22 +29,27 @@ function NotFoundPage() {
   );
 }
 
-
 function App() {
   return (
-    <TaskProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<SiteLayout />}>
-            <Route index element={<DashboardPage />} />
-            <Route path="tasks" element={<TasksPage />} />
-            <Route path="focus" element={<FocusPage />} />
-            <Route path="settings" element={<SettingsPage />} />
-            <Route path="*" element={<NotFoundPage />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </TaskProvider>
+    <ThemeProvider>
+      <TaskProvider>
+        <NotificationProvider>
+          <ToastProvider>
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<SiteLayout />}>
+                  <Route index element={<DashboardPage />} />
+                  <Route path="tasks" element={<TasksPage />} />
+                  <Route path="focus" element={<FocusPage />} />
+                  <Route path="settings" element={<SettingsPage />} />
+                  <Route path="*" element={<NotFoundPage />} />
+                </Route>
+              </Routes>
+            </BrowserRouter>
+          </ToastProvider>
+        </NotificationProvider>
+      </TaskProvider>
+    </ThemeProvider>
   );
 }
 

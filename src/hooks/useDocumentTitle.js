@@ -3,7 +3,13 @@ import { useEffect } from "react";
 
 function useDocumentTitle(title) {
     useEffect(() => {
+        const previousTitle = document.title;
+
         document.title = `${title} | Academia`;
+
+        return () => {
+            document.title = previousTitle;
+        };
     }, [title]);
 }
 

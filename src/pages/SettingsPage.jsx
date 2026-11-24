@@ -4,14 +4,24 @@ import {
     Palette,
     Bell,
     BookOpen,
-    Clock3,
     Moon,
     Sun,
-    ChevronRight,
     RotateCcw,
     ShieldCheck,
     Target,
 } from "lucide-react";
+
+import useDocumentTitle from "../hooks/useDocumentTitle";
+import useLocalStorage from "../hooks/useLocalStorage";
+
+import { useTheme } from "../context/ThemeContext";
+import { useNotifications } from "../context/NotificationContext";
+
+const defaultStudyPreferences = {
+    dailyGoal: "4",
+    focusDuration: "25",
+    shortBreak: "5",
+};
 
 function SettingsSection({ title, description, icon: Icon, children }) {
     return (
@@ -25,6 +35,7 @@ function SettingsSection({ title, description, icon: Icon, children }) {
                     <h2 className="font-bold text-[var(--foreground)]">
                         {title}
                     </h2>
+
                     <p className="mt-1 text-sm text-[var(--muted)]">
                         {description}
                     </p>
@@ -45,6 +56,7 @@ function SettingRow({ title, description, children }) {
                 <h3 className="text-sm font-semibold text-[var(--foreground)]">
                     {title}
                 </h3>
+
                 <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">
                     {description}
                 </p>
@@ -58,6 +70,43 @@ function SettingRow({ title, description, children }) {
 }
 
 function SettingsPage() {
+    useDocumentTitle("Settings");
+
+    const { theme, setTheme } = useTheme();
+
+    const {
+        notifications,
+        updateNotification,
+        resetNotifications,
+    } = useNotifications();
+
+    // Save study preferences in localStorage
+    const [studyPreferences, setStudyPreferences] = useLocalStorage(
+        "academia-study-preferences",
+        defaultStudyPreferences
+    );
+
+    // Update one study preference
+    const updateStudyPreference = (setting, value) => {
+        setStudyPreferences((previousPreferences) => ({
+            ...previousPreferences,
+            [setting]: value,
+        }));
+    };
+
+    // Reset all preferences
+    const handleReset = () => {
+        const confirmed = window.confirm(
+            "Are you sure you want to reset all your preferences?"
+        );
+
+        if (!confirmed) return;
+
+        setTheme("light");
+        resetNotifications();
+        setStudyPreferences(defaultStudyPreferences);
+    };
+
     return (
         <div className="space-y-8 pb-10">
 
@@ -91,6 +140,7 @@ function SettingsPage() {
                         <h3 className="font-bold text-[var(--foreground)]">
                             Academia Student
                         </h3>
+
                         <p className="mt-1 text-sm text-[var(--muted)]">
                             Welcome to your personal learning space.
                         </p>
@@ -122,7 +172,12 @@ function SettingsPage() {
                     <div className="flex gap-2">
                         <button
                             type="button"
-                            className="flex items-center gap-2 rounded-lg border border-[var(--foreground)] bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
+                            onClick={() => setTheme("light")}
+                            aria-pressed={theme === "light"}
+                            className={`flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition ${theme === "light"
+                                    ? "border-[var(--foreground)] bg-[var(--primary)] text-[var(--primary-foreground)]"
+                                    : "border-[var(--border)] text-[var(--foreground)] hover:bg-[var(--surface-secondary)]"
+                                }`}
                         >
                             <Sun size={16} />
                             Light
@@ -130,7 +185,12 @@ function SettingsPage() {
 
                         <button
                             type="button"
-                            className="flex items-center gap-2 rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--foreground)] hover:bg-[var(--surface-secondary)]"
+                            onClick={() => setTheme("dark")}
+                            aria-pressed={theme === "dark"}
+                            className={`flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition ${theme === "dark"
+                                    ? "border-[var(--foreground)] bg-[var(--primary)] text-[var(--primary-foreground)]"
+                                    : "border-[var(--border)] text-[var(--foreground)] hover:bg-[var(--surface-secondary)]"
+                                }`}
                         >
                             <Moon size={16} />
                             Dark
@@ -150,7 +210,13 @@ function SettingsPage() {
                     description="Your target study time each day."
                 >
                     <select
-                        defaultValue="4"
+                        value={studyPreferences.dailyGoal}
+                        onChange={(event) =>
+                            updateStudyPreference(
+                                "dailyGoal",
+                                event.target.value
+                            )
+                        }
                         className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none sm:w-36"
                     >
                         <option value="2">2 hours</option>
@@ -167,7 +233,13 @@ function SettingsPage() {
                     description="How long each focus session should last."
                 >
                     <select
-                        defaultValue="25"
+                        value={studyPreferences.focusDuration}
+                        onChange={(event) =>
+                            updateStudyPreference(
+                                "focusDuration",
+                                event.target.value
+                            )
+                        }
                         className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none sm:w-36"
                     >
                         <option value="15">15 minutes</option>
@@ -183,7 +255,13 @@ function SettingsPage() {
                     description="Your preferred break between focus sessions."
                 >
                     <select
-                        defaultValue="5"
+                        value={studyPreferences.shortBreak}
+                        onChange={(event) =>
+                            updateStudyPreference(
+                                "shortBreak",
+                                event.target.value
+                            )
+                        }
                         className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none sm:w-36"
                     >
                         <option value="5">5 minutes</option>
@@ -205,9 +283,15 @@ function SettingsPage() {
                 >
                     <input
                         type="checkbox"
-                        defaultChecked
+                        checked={notifications.studyReminders}
+                        onChange={(event) =>
+                            updateNotification(
+                                "studyReminders",
+                                event.target.checked
+                            )
+                        }
                         aria-label="Enable study reminders"
-                        className="h-5 w-5 accent-[var(--foreground)]"
+                        className="h-5 w-5 cursor-pointer accent-[var(--foreground)]"
                     />
                 </SettingRow>
 
@@ -217,9 +301,15 @@ function SettingsPage() {
                 >
                     <input
                         type="checkbox"
-                        defaultChecked
+                        checked={notifications.taskDueDateAlerts}
+                        onChange={(event) =>
+                            updateNotification(
+                                "taskDueDateAlerts",
+                                event.target.checked
+                            )
+                        }
                         aria-label="Enable task due date alerts"
-                        className="h-5 w-5 accent-[var(--foreground)]"
+                        className="h-5 w-5 cursor-pointer accent-[var(--foreground)]"
                     />
                 </SettingRow>
 
@@ -229,9 +319,15 @@ function SettingsPage() {
                 >
                     <input
                         type="checkbox"
-                        defaultChecked
+                        checked={notifications.focusSessionNotifications}
+                        onChange={(event) =>
+                            updateNotification(
+                                "focusSessionNotifications",
+                                event.target.checked
+                            )
+                        }
                         aria-label="Enable focus session notifications"
-                        className="h-5 w-5 accent-[var(--foreground)]"
+                        className="h-5 w-5 cursor-pointer accent-[var(--foreground)]"
                     />
                 </SettingRow>
             </SettingsSection>
@@ -244,10 +340,11 @@ function SettingsPage() {
             >
                 <SettingRow
                     title="Reset Preferences"
-                    description="Restore the application settings to their defaults."
+                    description="Restore your theme, study preferences and notification settings to their defaults."
                 >
                     <button
                         type="button"
+                        onClick={handleReset}
                         className="flex items-center gap-2 rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--foreground)] transition hover:bg-[var(--surface-secondary)]"
                     >
                         <RotateCcw size={16} />
@@ -259,6 +356,7 @@ function SettingsPage() {
             {/* FOOTER MESSAGE */}
             <div className="flex items-center justify-center gap-2 border-t border-[var(--border)] pt-6">
                 <Target size={17} className="text-[var(--muted)]" />
+
                 <p className="text-sm text-[var(--muted)]">
                     Build a learning environment that works for you.
                 </p>

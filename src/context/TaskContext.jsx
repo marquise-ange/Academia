@@ -53,7 +53,6 @@ export function TaskProvider({ children }) {
         initialTasks
     );
 
-    // Add a new task
     const addTask = (task) => {
         const newTask = {
             id: Date.now(),
@@ -64,7 +63,6 @@ export function TaskProvider({ children }) {
         setTasks((previousTasks) => [...previousTasks, newTask]);
     };
 
-    // Edit an existing task
     const updateTask = (taskId, updatedDetails) => {
         setTasks((previousTasks) =>
             previousTasks.map((task) =>
@@ -75,14 +73,12 @@ export function TaskProvider({ children }) {
         );
     };
 
-    // Delete a task
     const deleteTask = (taskId) => {
         setTasks((previousTasks) =>
             previousTasks.filter((task) => task.id !== taskId)
         );
     };
 
-    // Mark a task as completed or pending
     const toggleTask = (taskId) => {
         setTasks((previousTasks) =>
             previousTasks.map((task) =>

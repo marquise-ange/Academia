@@ -13,6 +13,9 @@ import {
     Circle,
     ArrowRight,
 } from "lucide-react";
+import { Link } from "react-router-dom";
+import { useTasks } from "../context/TaskContext";
+import useDocumentTitle from "../hooks/useDocumentTitle";
 
 const weeklyActivity = [
     { day: "Mon", hours: 3 },
@@ -22,33 +25,6 @@ const weeklyActivity = [
     { day: "Fri", hours: 4 },
     { day: "Sat", hours: 7 },
     { day: "Sun", hours: 3 },
-];
-
-const tasks = [
-    {
-        id: 1,
-        title: "Complete React components",
-        subject: "Web Development",
-        time: "10:00 AM",
-        priority: "High",
-        completed: false,
-    },
-    {
-        id: 2,
-        title: "Review database concepts",
-        subject: "Database Management",
-        time: "01:30 PM",
-        priority: "Medium",
-        completed: false,
-    },
-    {
-        id: 3,
-        title: "Read Chapter 4 notes",
-        subject: "Information Management",
-        time: "03:00 PM",
-        priority: "Low",
-        completed: true,
-    },
 ];
 
 function StatCard({ title, value, description, icon: Icon }) {
@@ -67,13 +43,39 @@ function StatCard({ title, value, description, icon: Icon }) {
                 {value}
             </h2>
 
-            <p className="mt-2 text-xs text-[var(--muted)]">{description}</p>
+            <p className="mt-2 text-xs text-[var(--muted)]">
+                {description}
+            </p>
         </div>
     );
 }
 
 function DashboardPage() {
+    useDocumentTitle("Dashboard");
+
+    const { tasks, toggleTask } = useTasks();
+
+    const totalTasks = tasks.length;
+    const completedTasks = tasks.filter((task) => task.completed).length;
+    const pendingTasks = totalTasks - completedTasks;
+
+    const completionPercentage =
+        totalTasks > 0
+            ? Math.round((completedTasks / totalTasks) * 100)
+            : 0;
+
+    // Show pending tasks first, followed by completed tasks.
+    const upcomingTasks = [
+        ...tasks.filter((task) => !task.completed),
+        ...tasks.filter((task) => task.completed),
+    ].slice(0, 4);
+
     const maxHours = 8;
+
+    const totalStudyHours = weeklyActivity.reduce(
+        (total, item) => total + item.hours,
+        0
+    );
 
     return (
         <div className="space-y-8 pb-10">
@@ -94,10 +96,13 @@ function DashboardPage() {
                     </p>
                 </div>
 
-                <button className="flex w-fit items-center gap-2 rounded-xl bg-[var(--primary)] px-5 py-3 text-sm font-semibold text-[var(--primary-foreground)] transition hover:opacity-80">
+                <Link
+                    to="/tasks"
+                    className="flex w-fit items-center gap-2 rounded-xl bg-[var(--primary)] px-5 py-3 text-sm font-semibold text-white transition hover:opacity-80"
+                >
                     <Plus size={18} />
                     Add New Task
-                </button>
+                </Link>
             </section>
 
             {/* DATE AND DAILY MOTIVATION */}
@@ -144,22 +149,22 @@ function DashboardPage() {
 
                     <StatCard
                         title="Completed Tasks"
-                        value="24"
+                        value={completedTasks}
                         description="Tasks successfully completed"
                         icon={CheckCircle2}
                     />
 
                     <StatCard
-                        title="Current Streak"
-                        value="7 days"
-                        description="Keep showing up every day"
-                        icon={Flame}
+                        title="Pending Tasks"
+                        value={pendingTasks}
+                        description="Tasks still needing attention"
+                        icon={BookOpen}
                     />
 
                     <StatCard
-                        title="Weekly Goal"
-                        value="75%"
-                        description="15 of 20 hours completed"
+                        title="Task Progress"
+                        value={`${completionPercentage}%`}
+                        description={`${completedTasks} of ${totalTasks} tasks completed`}
                         icon={Target}
                     />
                 </div>
@@ -220,7 +225,7 @@ function DashboardPage() {
                             Total study time
                         </p>
                         <p className="text-sm font-bold text-[var(--foreground)]">
-                            30 hours
+                            {totalStudyHours} hours
                         </p>
                     </div>
                 </div>
@@ -236,13 +241,13 @@ function DashboardPage() {
                     </p>
 
                     <div className="my-8 flex justify-center">
-                        <div className="relative flex h-40 w-40 items-center justify-center rounded-full border-[12px] border-[var(--surface-secondary)]">
-                            <div
-                                className="absolute inset-[-12px] rounded-full border-[12px] border-transparent border-t-[var(--primary)] border-r-[var(--primary)]"
-                                style={{ transform: "rotate(35deg)" }}
-                            />
-
-                            <div className="text-center">
+                        <div
+                            className="relative flex h-40 w-40 items-center justify-center rounded-full"
+                            style={{
+                                background: "conic-gradient(var(--primary) 0% 75%, var(--surface-secondary) 75% 100%)",
+                            }}
+                        >
+                            <div className="absolute inset-3 flex flex-col items-center justify-center rounded-full bg-[var(--surface)]">
                                 <p className="text-4xl font-bold text-[var(--foreground)]">
                                     75%
                                 </p>
@@ -287,48 +292,72 @@ function DashboardPage() {
                             </p>
                         </div>
 
-                        <button className="flex items-center gap-1 text-sm font-semibold text-[var(--foreground)] hover:opacity-60">
+                        <Link
+                            to="/tasks"
+                            className="flex items-center gap-1 text-sm font-semibold text-[var(--foreground)] hover:opacity-60"
+                        >
                             View all
                             <ArrowRight size={16} />
-                        </button>
+                        </Link>
                     </div>
 
                     <div className="mt-6 space-y-3">
-                        {tasks.map((task) => (
-                            <div
-                                key={task.id}
-                                className="flex flex-col gap-3 rounded-xl border border-[var(--border)] p-4 sm:flex-row sm:items-center sm:justify-between"
-                            >
-                                <div className="flex items-start gap-3">
-                                    <div className="mt-1 text-[var(--muted)]">
-                                        {task.completed ? (
-                                            <CheckCircle2 size={20} />
-                                        ) : (
-                                            <Circle size={20} />
-                                        )}
-                                    </div>
-
-                                    <div>
-                                        <h3
-                                            className={`text-sm font-semibold ${task.completed
-                                                ? "text-[var(--muted)] line-through"
-                                                : "text-[var(--foreground)]"
-                                                }`}
+                        {upcomingTasks.length > 0 ? (
+                            upcomingTasks.map((task) => (
+                                <div
+                                    key={task.id}
+                                    className="flex flex-col gap-3 rounded-xl border border-[var(--border)] p-4 sm:flex-row sm:items-center sm:justify-between"
+                                >
+                                    <div className="flex items-start gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => toggleTask(task.id)}
+                                            aria-label={
+                                                task.completed
+                                                    ? "Mark task as pending"
+                                                    : "Mark task as completed"
+                                            }
+                                            className="mt-1 text-[var(--muted)] hover:text-[var(--foreground)]"
                                         >
-                                            {task.title}
-                                        </h3>
+                                            {task.completed ? (
+                                                <CheckCircle2 size={20} />
+                                            ) : (
+                                                <Circle size={20} />
+                                            )}
+                                        </button>
 
-                                        <p className="mt-1 text-xs text-[var(--muted)]">
-                                            {task.subject} · {task.time}
-                                        </p>
+                                        <div>
+                                            <h3
+                                                className={`text-sm font-semibold ${task.completed
+                                                    ? "text-[var(--muted)] line-through"
+                                                    : "text-[var(--foreground)]"
+                                                    }`}
+                                            >
+                                                {task.title}
+                                            </h3>
+
+                                            <p className="mt-1 text-xs text-[var(--muted)]">
+                                                {task.subject} · {task.dueDate}
+                                            </p>
+                                        </div>
                                     </div>
-                                </div>
 
-                                <span className="w-fit rounded-lg bg-[var(--surface-secondary)] px-3 py-1.5 text-xs font-medium text-[var(--foreground)]">
-                                    {task.priority} Priority
-                                </span>
+                                    <span className="w-fit rounded-lg bg-[var(--surface-secondary)] px-3 py-1.5 text-xs font-medium text-[var(--foreground)]">
+                                        {task.priority} Priority
+                                    </span>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="py-10 text-center">
+                                <BookOpen
+                                    size={30}
+                                    className="mx-auto text-[var(--muted)]"
+                                />
+                                <p className="mt-3 text-sm text-[var(--muted)]">
+                                    No tasks yet. Create your first task!
+                                </p>
                             </div>
-                        ))}
+                        )}
                     </div>
                 </div>
 
@@ -343,7 +372,10 @@ function DashboardPage() {
                     </p>
 
                     <div className="mt-6 space-y-3">
-                        <button className="flex w-full items-center gap-3 rounded-xl border border-[var(--border)] p-4 text-left transition hover:bg-[var(--surface-secondary)]">
+                        <Link
+                            to="/tasks"
+                            className="flex w-full items-center gap-3 rounded-xl border border-[var(--border)] p-4 text-left transition hover:bg-[var(--surface-secondary)]"
+                        >
                             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--surface-secondary)]">
                                 <Plus size={20} />
                             </div>
@@ -356,9 +388,12 @@ function DashboardPage() {
                                     Add something to your list
                                 </p>
                             </div>
-                        </button>
+                        </Link>
 
-                        <button className="flex w-full items-center gap-3 rounded-xl border border-[var(--border)] p-4 text-left transition hover:bg-[var(--surface-secondary)]">
+                        <Link
+                            to="/focus"
+                            className="flex w-full items-center gap-3 rounded-xl border border-[var(--border)] p-4 text-left transition hover:bg-[var(--surface-secondary)]"
+                        >
                             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--surface-secondary)]">
                                 <Play size={20} />
                             </div>
@@ -371,9 +406,12 @@ function DashboardPage() {
                                     Focus on your next goal
                                 </p>
                             </div>
-                        </button>
+                        </Link>
 
-                        <button className="flex w-full items-center gap-3 rounded-xl border border-[var(--border)] p-4 text-left transition hover:bg-[var(--surface-secondary)]">
+                        <Link
+                            to="/settings"
+                            className="flex w-full items-center gap-3 rounded-xl border border-[var(--border)] p-4 text-left transition hover:bg-[var(--surface-secondary)]"
+                        >
                             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--surface-secondary)]">
                                 <BookOpen size={20} />
                             </div>
@@ -386,7 +424,7 @@ function DashboardPage() {
                                     Check your study performance
                                 </p>
                             </div>
-                        </button>
+                        </Link>
                     </div>
                 </div>
             </section>

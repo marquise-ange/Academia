@@ -12,23 +12,41 @@ import {
     BookOpen,
     ArrowUpDown,
     Trash2,
+    X,
 } from "lucide-react";
+
 import { useTasks } from "../context/TaskContext";
+import { useToast } from "../context/ToastContext";
+import useDocumentTitle from "../hooks/useDocumentTitle";
+
+const emptyForm = {
+    title: "",
+    subject: "",
+    dueDate: "",
+    priority: "Medium",
+};
 
 function TasksPage() {
-    const { tasks, toggleTask, deleteTask } = useTasks();
+    useDocumentTitle("My Tasks");
+
+    const { tasks, addTask, toggleTask, deleteTask } = useTasks();
+    const { showToast } = useToast();
 
     const [searchTerm, setSearchTerm] = useState("");
     const [activeFilter, setActiveFilter] = useState("All");
     const [sortOrder, setSortOrder] = useState("default");
     const [openMenu, setOpenMenu] = useState(null);
 
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [formData, setFormData] = useState(emptyForm);
+    const [formError, setFormError] = useState("");
+
     // Task statistics
     const totalTasks = tasks.length;
     const completedTasks = tasks.filter((task) => task.completed).length;
     const pendingTasks = totalTasks - completedTasks;
 
-    // Search and filter tasks
+    // Search, filter and sort
     const filteredTasks = tasks
         .filter((task) => {
             const matchesSearch =
@@ -49,6 +67,7 @@ function TasksPage() {
 
             if (sortOrder === "priority") {
                 const priorityOrder = { High: 1, Medium: 2, Low: 3 };
+
                 return (
                     (priorityOrder[a.priority] || 4) -
                     (priorityOrder[b.priority] || 4)
@@ -57,6 +76,70 @@ function TasksPage() {
 
             return 0;
         });
+
+    // Handle form input changes
+    const handleInputChange = (event) => {
+        const { name, value } = event.target;
+
+        setFormData((previousData) => ({
+            ...previousData,
+            [name]: value,
+        }));
+    };
+
+    // Add a new task
+    const handleAddTask = (event) => {
+        event.preventDefault();
+
+        if (
+            !formData.title.trim() ||
+            !formData.subject.trim() ||
+            !formData.dueDate
+        ) {
+            setFormError("Please complete all fields.");
+            return;
+        }
+
+        addTask({
+            title: formData.title.trim(),
+            subject: formData.subject.trim(),
+            dueDate: formData.dueDate,
+            priority: formData.priority,
+        });
+
+        setFormData(emptyForm);
+        setFormError("");
+        setIsModalOpen(false);
+
+        showToast("Task added successfully!", "success");
+    };
+
+    // Complete or reopen a task
+    const handleToggleTask = (task) => {
+        toggleTask(task.id);
+
+        showToast(
+            task.completed
+                ? "Task moved back to pending."
+                : "Task marked as completed!",
+            "success"
+        );
+    };
+
+    // Delete a task
+    const handleDeleteTask = (taskId) => {
+        deleteTask(taskId);
+        setOpenMenu(null);
+
+        showToast("Task deleted successfully!", "success");
+    };
+
+    // Close and reset modal
+    const closeModal = () => {
+        setIsModalOpen(false);
+        setFormData(emptyForm);
+        setFormError("");
+    };
 
     return (
         <div className="space-y-8 pb-10">
@@ -79,7 +162,7 @@ function TasksPage() {
 
                 <button
                     type="button"
-                    onClick={() => alert("Task creation will be implemented in our next step.")}
+                    onClick={() => setIsModalOpen(true)}
                     className="flex w-fit items-center gap-2 rounded-xl bg-[var(--primary)] px-5 py-3 text-sm font-semibold text-[var(--primary-foreground)] transition hover:opacity-80"
                 >
                     <Plus size={18} />
@@ -89,41 +172,45 @@ function TasksPage() {
 
             {/* TASK SUMMARY */}
             <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5">
-                    <p className="text-sm text-[var(--muted)]">Total Tasks</p>
-                    <h2 className="mt-2 text-3xl font-bold text-[var(--foreground)]">
-                        {String(totalTasks).padStart(2, "0")}
-                    </h2>
-                    <p className="mt-2 text-xs text-[var(--muted)]">
-                        Tasks in your list
-                    </p>
-                </div>
+                {[
+                    {
+                        label: "Total Tasks",
+                        value: totalTasks,
+                        description: "Tasks in your list",
+                    },
+                    {
+                        label: "Pending",
+                        value: pendingTasks,
+                        description: "Still need your attention",
+                    },
+                    {
+                        label: "Completed",
+                        value: completedTasks,
+                        description: "Great progress so far",
+                    },
+                ].map((item) => (
+                    <div
+                        key={item.label}
+                        className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5"
+                    >
+                        <p className="text-sm text-[var(--muted)]">
+                            {item.label}
+                        </p>
 
-                <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5">
-                    <p className="text-sm text-[var(--muted)]">Pending</p>
-                    <h2 className="mt-2 text-3xl font-bold text-[var(--foreground)]">
-                        {String(pendingTasks).padStart(2, "0")}
-                    </h2>
-                    <p className="mt-2 text-xs text-[var(--muted)]">
-                        Still need your attention
-                    </p>
-                </div>
+                        <h2 className="mt-2 text-3xl font-bold text-[var(--foreground)]">
+                            {String(item.value).padStart(2, "0")}
+                        </h2>
 
-                <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5">
-                    <p className="text-sm text-[var(--muted)]">Completed</p>
-                    <h2 className="mt-2 text-3xl font-bold text-[var(--foreground)]">
-                        {String(completedTasks).padStart(2, "0")}
-                    </h2>
-                    <p className="mt-2 text-xs text-[var(--muted)]">
-                        Great progress so far
-                    </p>
-                </div>
+                        <p className="mt-2 text-xs text-[var(--muted)]">
+                            {item.description}
+                        </p>
+                    </div>
+                ))}
             </section>
 
             {/* SEARCH AND FILTERS */}
             <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-
                     <div className="relative w-full lg:max-w-md">
                         <Search
                             size={18}
@@ -167,7 +254,12 @@ function TasksPage() {
                             className="flex items-center gap-2 rounded-xl border border-[var(--border)] px-4 py-3 text-sm text-[var(--foreground)] transition hover:bg-[var(--surface-secondary)]"
                         >
                             <ArrowUpDown size={16} />
-                            Sort: {sortOrder === "default" ? "Default" : sortOrder === "alphabetical" ? "A–Z" : "Priority"}
+                            Sort:{" "}
+                            {sortOrder === "default"
+                                ? "Default"
+                                : sortOrder === "alphabetical"
+                                    ? "A–Z"
+                                    : "Priority"}
                         </button>
                     </div>
                 </div>
@@ -194,15 +286,19 @@ function TasksPage() {
                 <div className="mb-4 flex items-center justify-between">
                     <div>
                         <h2 className="text-lg font-bold text-[var(--foreground)]">
-                            {activeFilter === "All" ? "All Tasks" : `${activeFilter} Tasks`}
+                            {activeFilter === "All"
+                                ? "All Tasks"
+                                : `${activeFilter} Tasks`}
                         </h2>
+
                         <p className="mt-1 text-sm text-[var(--muted)]">
                             Your current study activities.
                         </p>
                     </div>
 
                     <span className="text-sm text-[var(--muted)]">
-                        {filteredTasks.length} {filteredTasks.length === 1 ? "task" : "tasks"}
+                        {filteredTasks.length}{" "}
+                        {filteredTasks.length === 1 ? "task" : "tasks"}
                     </span>
                 </div>
 
@@ -216,11 +312,11 @@ function TasksPage() {
                                 <div className="flex items-start gap-4">
                                     <button
                                         type="button"
-                                        onClick={() => toggleTask(task.id)}
+                                        onClick={() => handleToggleTask(task)}
                                         aria-label={
                                             task.completed
-                                                ? `Mark ${task.title} as pending`
-                                                : `Mark ${task.title} as completed`
+                                                ? "Mark as pending"
+                                                : "Mark as completed"
                                         }
                                         className="mt-1 text-[var(--muted)] transition hover:text-[var(--foreground)]"
                                     >
@@ -264,10 +360,11 @@ function TasksPage() {
                                         <button
                                             type="button"
                                             aria-label={`More options for ${task.title}`}
-                                            aria-expanded={openMenu === task.id}
                                             onClick={() =>
                                                 setOpenMenu(
-                                                    openMenu === task.id ? null : task.id
+                                                    openMenu === task.id
+                                                        ? null
+                                                        : task.id
                                                 )
                                             }
                                             className="rounded-lg p-2 text-[var(--muted)] transition hover:bg-[var(--surface-secondary)]"
@@ -279,10 +376,9 @@ function TasksPage() {
                                             <div className="absolute right-0 top-full z-10 mt-2 w-40 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-2 shadow-lg">
                                                 <button
                                                     type="button"
-                                                    onClick={() => {
-                                                        deleteTask(task.id);
-                                                        setOpenMenu(null);
-                                                    }}
+                                                    onClick={() =>
+                                                        handleDeleteTask(task.id)
+                                                    }
                                                     className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[var(--foreground)] transition hover:bg-[var(--surface-secondary)]"
                                                 >
                                                     <Trash2 size={16} />
@@ -296,10 +392,15 @@ function TasksPage() {
                         ))
                     ) : (
                         <div className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--surface)] px-5 py-12 text-center">
-                            <BookOpen size={30} className="mx-auto text-[var(--muted)]" />
+                            <BookOpen
+                                size={30}
+                                className="mx-auto text-[var(--muted)]"
+                            />
+
                             <h3 className="mt-4 font-semibold text-[var(--foreground)]">
                                 No tasks found
                             </h3>
+
                             <p className="mt-2 text-sm text-[var(--muted)]">
                                 Try changing your search or filter.
                             </p>
@@ -311,10 +412,159 @@ function TasksPage() {
             {/* BOTTOM MESSAGE */}
             <div className="flex items-center gap-3 border-t border-[var(--border)] pt-6">
                 <Clock3 size={18} className="text-[var(--muted)]" />
+
                 <p className="text-sm text-[var(--muted)]">
                     Every completed task brings you one step closer to your goals.
                 </p>
             </div>
+
+            {/* ADD TASK MODAL */}
+            {isModalOpen && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+                    onMouseDown={(event) => {
+                        if (event.target === event.currentTarget) {
+                            closeModal();
+                        }
+                    }}
+                >
+                    <div
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="add-task-title"
+                        className="w-full max-w-lg rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-2xl"
+                    >
+                        <div className="mb-6 flex items-center justify-between">
+                            <div>
+                                <h2
+                                    id="add-task-title"
+                                    className="text-xl font-bold text-[var(--foreground)]"
+                                >
+                                    Create a New Task
+                                </h2>
+
+                                <p className="mt-1 text-sm text-[var(--muted)]">
+                                    Add something you want to accomplish.
+                                </p>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={closeModal}
+                                aria-label="Close form"
+                                className="rounded-lg p-2 text-[var(--muted)] hover:bg-[var(--surface-secondary)]"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleAddTask} className="space-y-5">
+                            <div>
+                                <label
+                                    htmlFor="title"
+                                    className="mb-2 block text-sm font-medium text-[var(--foreground)]"
+                                >
+                                    Task Title
+                                </label>
+
+                                <input
+                                    id="title"
+                                    name="title"
+                                    type="text"
+                                    value={formData.title}
+                                    onChange={handleInputChange}
+                                    placeholder="e.g. Complete React assignment"
+                                    className="w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--foreground)]"
+                                />
+                            </div>
+
+                            <div>
+                                <label
+                                    htmlFor="subject"
+                                    className="mb-2 block text-sm font-medium text-[var(--foreground)]"
+                                >
+                                    Subject
+                                </label>
+
+                                <input
+                                    id="subject"
+                                    name="subject"
+                                    type="text"
+                                    value={formData.subject}
+                                    onChange={handleInputChange}
+                                    placeholder="e.g. Web Development"
+                                    className="w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--foreground)]"
+                                />
+                            </div>
+
+                            <div>
+                                <label
+                                    htmlFor="dueDate"
+                                    className="mb-2 block text-sm font-medium text-[var(--foreground)]"
+                                >
+                                    Due Date
+                                </label>
+
+                                <input
+                                    id="dueDate"
+                                    name="dueDate"
+                                    type="date"
+                                    value={formData.dueDate}
+                                    onChange={handleInputChange}
+                                    className="w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--foreground)]"
+                                />
+                            </div>
+
+                            <div>
+                                <label
+                                    htmlFor="priority"
+                                    className="mb-2 block text-sm font-medium text-[var(--foreground)]"
+                                >
+                                    Priority
+                                </label>
+
+                                <select
+                                    id="priority"
+                                    name="priority"
+                                    value={formData.priority}
+                                    onChange={handleInputChange}
+                                    className="w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--foreground)]"
+                                >
+                                    <option value="High">High</option>
+                                    <option value="Medium">Medium</option>
+                                    <option value="Low">Low</option>
+                                </select>
+                            </div>
+
+                            {formError && (
+                                <p
+                                    role="alert"
+                                    className="text-sm text-[var(--foreground)]"
+                                >
+                                    {formError}
+                                </p>
+                            )}
+
+                            <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
+                                <button
+                                    type="button"
+                                    onClick={closeModal}
+                                    className="rounded-xl border border-[var(--border)] px-5 py-3 text-sm font-semibold text-[var(--foreground)] transition hover:bg-[var(--surface-secondary)]"
+                                >
+                                    Cancel
+                                </button>
+
+                                <button
+                                    type="submit"
+                                    className="rounded-xl bg-[var(--primary)] px-5 py-3 text-sm font-semibold text-[var(--primary-foreground)] transition hover:opacity-80"
+                                >
+                                    Save Task
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
