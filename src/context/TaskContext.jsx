@@ -1,73 +1,114 @@
 
-import {
-    createContext,
-    useContext,
-    useState,
-    useCallback,
-    useEffect,
-    useRef,
-} from "react";
+import { createContext, useContext } from "react";
+import useLocalStorage from "../hooks/useLocalStorage";
 
-const ToastContext = createContext(null);
+const TaskContext = createContext(null);
 
-export function ToastProvider({ children }) {
-    const [toast, setToast] = useState(null);
-    const timerRef = useRef(null);
+const initialTasks = [
+    {
+        id: 1,
+        title: "Complete React components",
+        subject: "Web Development",
+        dueDate: "Today",
+        priority: "High",
+        completed: false,
+    },
+    {
+        id: 2,
+        title: "Review database concepts",
+        subject: "Database Management",
+        dueDate: "Tomorrow",
+        priority: "Medium",
+        completed: false,
+    },
+    {
+        id: 3,
+        title: "Read Chapter 4 notes",
+        subject: "Information Management",
+        dueDate: "Today",
+        priority: "Low",
+        completed: true,
+    },
+    {
+        id: 4,
+        title: "Practice JavaScript exercises",
+        subject: "Web Development",
+        dueDate: "Friday",
+        priority: "High",
+        completed: false,
+    },
+    {
+        id: 5,
+        title: "Prepare accounting revision notes",
+        subject: "Accounting",
+        dueDate: "Saturday",
+        priority: "Medium",
+        completed: false,
+    },
+];
 
-    // Display a notification
-    const showToast = useCallback((message, type = "success") => {
-        // Clear the previous timer
-        if (timerRef.current) {
-            clearTimeout(timerRef.current);
-        }
+export function TaskProvider({ children }) {
+    const [tasks, setTasks] = useLocalStorage(
+        "academia-tasks",
+        initialTasks
+    );
 
-        // Display the new notification
-        setToast({ message, type });
-
-        // Automatically hide it after 3 seconds
-        timerRef.current = setTimeout(() => {
-            setToast(null);
-            timerRef.current = null;
-        }, 3000);
-    }, []);
-
-    // Clean up the timer when the provider unmounts
-    useEffect(() => {
-        return () => {
-            if (timerRef.current) {
-                clearTimeout(timerRef.current);
-            }
+    const addTask = (task) => {
+        const newTask = {
+            id: Date.now(),
+            ...task,
+            completed: false,
         };
-    }, []);
+
+        setTasks((previousTasks) => [...previousTasks, newTask]);
+    };
+
+    const updateTask = (taskId, updatedDetails) => {
+        setTasks((previousTasks) =>
+            previousTasks.map((task) =>
+                task.id === taskId
+                    ? { ...task, ...updatedDetails }
+                    : task
+            )
+        );
+    };
+
+    const deleteTask = (taskId) => {
+        setTasks((previousTasks) =>
+            previousTasks.filter((task) => task.id !== taskId)
+        );
+    };
+
+    const toggleTask = (taskId) => {
+        setTasks((previousTasks) =>
+            previousTasks.map((task) =>
+                task.id === taskId
+                    ? { ...task, completed: !task.completed }
+                    : task
+            )
+        );
+    };
 
     return (
-        <ToastContext.Provider value={{ showToast }}>
+        <TaskContext.Provider
+            value={{
+                tasks,
+                addTask,
+                updateTask,
+                deleteTask,
+                toggleTask,
+            }}
+        >
             {children}
-
-            {toast && (
-                <div
-                    role="status"
-                    aria-live="polite"
-                    className="fixed bottom-6 right-6 z-50 flex max-w-sm items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--foreground)] shadow-lg"
-                >
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--surface-secondary)] font-bold">
-                        {toast.type === "success" ? "✓" : "!"}
-                    </span>
-
-                    <p>{toast.message}</p>
-                </div>
-            )}
-        </ToastContext.Provider>
+        </TaskContext.Provider>
     );
 }
 
-export function useToast() {
-    const context = useContext(ToastContext);
+export function useTasks() {
+    const context = useContext(TaskContext);
 
     if (!context) {
-        throw new Error(
-            "useToast must be used inside ToastProvider"
-        );
+        throw new Error("useTasks must be used inside TaskProvider");
     }
 
     return context;
