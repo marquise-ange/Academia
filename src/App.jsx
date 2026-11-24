@@ -1,6 +1,6 @@
 
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-
+import TasksPage from "./pages/TasksPage";
 import SiteLayout from "./layouts/SiteLayout";
 import DashboardPage from "./pages/DashboardPage";
 
@@ -26,6 +26,7 @@ function App() {
       <Routes>
         <Route path="/" element={<SiteLayout />}>
           <Route index element={<DashboardPage />} />
+          <Route path="tasks" element={<TasksPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>
