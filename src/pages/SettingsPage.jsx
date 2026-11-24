@@ -13,6 +13,8 @@ import {
     Target,
 } from "lucide-react";
 
+import useDocumentTitle from "../hooks/useDocumentTitle";
+
 function SettingsSection({ title, description, icon: Icon, children }) {
     return (
         <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 sm:p-6">
@@ -58,6 +60,8 @@ function SettingRow({ title, description, children }) {
 }
 
 function SettingsPage() {
+    useDocumentTitle("Settings");
+
     return (
         <div className="space-y-8 pb-10">
 
@@ -259,6 +263,7 @@ function SettingsPage() {
             {/* FOOTER MESSAGE */}
             <div className="flex items-center justify-center gap-2 border-t border-[var(--border)] pt-6">
                 <Target size={17} className="text-[var(--muted)]" />
+
                 <p className="text-sm text-[var(--muted)]">
                     Build a learning environment that works for you.
                 </p>
