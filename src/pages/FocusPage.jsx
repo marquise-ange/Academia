@@ -11,18 +11,54 @@ import {
     Target,
     Settings2,
 } from "lucide-react";
-import useLocalStorage from "../hooks/useLocalStorage";
 
-const focusModes = [
-    { name: "Focus", minutes: 25, icon: Brain },
-    { name: "Short Break", minutes: 5, icon: Coffee },
-    { name: "Long Break", minutes: 15, icon: Clock3 },
-];
+import useLocalStorage from "../hooks/useLocalStorage";
+import useDocumentTitle from "../hooks/useDocumentTitle";
+import { useNotifications } from "../context/NotificationContext";
+import { useToast } from "../context/ToastContext";
 
 function FocusPage() {
+    useDocumentTitle("Focus Session");
+
+    // Read saved study preferences
+    const [studyPreferences] = useLocalStorage(
+        "academia-study-preferences",
+        {
+            dailyGoal: "4",
+            focusDuration: "25",
+            shortBreak: "5",
+        }
+    );
+
+    // Timer modes use the saved preferences
+    const focusModes = [
+        {
+            name: "Focus",
+            minutes: Number(studyPreferences.focusDuration),
+            icon: Brain,
+        },
+        {
+            name: "Short Break",
+            minutes: Number(studyPreferences.shortBreak),
+            icon: Coffee,
+        },
+        {
+            name: "Long Break",
+            minutes: 15,
+            icon: Clock3,
+        },
+    ];
+
     const [activeMode, setActiveMode] = useState("Focus");
-    const [secondsLeft, setSecondsLeft] = useState(25 * 60);
+
+    const [secondsLeft, setSecondsLeft] = useState(
+        Number(studyPreferences.focusDuration) * 60
+    );
+
     const [isRunning, setIsRunning] = useState(false);
+
+    const { notifications } = useNotifications();
+    const { showToast } = useToast();
 
     const [stats, setStats] = useLocalStorage("academia-focus-stats", {
         completedSessions: 0,
@@ -85,10 +121,31 @@ function FocusPage() {
         if (activeMode === "Focus") {
             setStats((previousStats) => ({
                 completedSessions: previousStats.completedSessions + 1,
-                focusMinutes: previousStats.focusMinutes + selectedMode.minutes,
+                focusMinutes:
+                    previousStats.focusMinutes + selectedMode.minutes,
             }));
+
+            if (notifications.focusSessionNotifications) {
+                showToast(
+                    "Focus session completed! Great job. Time to take a break.",
+                    "success"
+                );
+            }
+        } else {
+            showToast(
+                `${activeMode} completed! Ready for your next session.`,
+                "success"
+            );
         }
-    }, [secondsLeft, isRunning, activeMode, selectedMode, setStats]);
+    }, [
+        secondsLeft,
+        isRunning,
+        activeMode,
+        selectedMode,
+        setStats,
+        notifications.focusSessionNotifications,
+        showToast,
+    ]);
 
     // Display total focus time
     const formatFocusTime = (minutes) => {
@@ -104,6 +161,7 @@ function FocusPage() {
 
     return (
         <div className="space-y-8 pb-10">
+
             {/* PAGE HEADER */}
             <section>
                 <p className="text-sm font-medium text-[var(--muted)]">
@@ -152,7 +210,11 @@ function FocusPage() {
                             <div
                                 className="absolute inset-[-12px] rounded-full border-[12px] border-transparent border-t-[var(--primary)] border-r-[var(--primary)]"
                                 style={{
-                                    transform: `rotate(${45 + (1 - secondsLeft / (selectedMode.minutes * 60)) * 360
+                                    transform: `rotate(${45 +
+                                        (1 -
+                                            secondsLeft /
+                                            (selectedMode.minutes * 60)) *
+                                        360
                                         }deg)`,
                                     transition: "transform 1s linear",
                                 }}
@@ -189,7 +251,9 @@ function FocusPage() {
                             ) : (
                                 <>
                                     <Play size={18} />
-                                    {secondsLeft === 0 ? "Start Again" : "Start Focus"}
+                                    {secondsLeft === 0
+                                        ? "Start Again"
+                                        : "Start Focus"}
                                 </>
                             )}
                         </button>
@@ -279,15 +343,15 @@ function FocusPage() {
                         </div>
 
                         <p className="mt-5 text-sm text-[var(--muted)]">
-                            Daily Goal
+                            Daily Study Goal
                         </p>
 
                         <h3 className="mt-1 text-3xl font-bold text-[var(--foreground)]">
-                            {stats.completedSessions} / 6
+                            {studyPreferences.dailyGoal}h
                         </h3>
 
                         <p className="mt-2 text-xs text-[var(--muted)]">
-                            Total sessions compared with your goal
+                            Your selected daily study target
                         </p>
                     </div>
                 </div>
@@ -306,9 +370,9 @@ function FocusPage() {
                         </h2>
 
                         <p className="mt-2 text-sm leading-relaxed text-[var(--muted)]">
-                            You don't need to do everything at once. Choose one
-                            important task, give it your full attention, and
-                            take one step at a time.
+                            You don't need to do everything at once. Choose
+                            one important task, give it your full attention,
+                            and take one step at a time.
                         </p>
                     </div>
                 </div>

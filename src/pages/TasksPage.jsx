@@ -14,7 +14,9 @@ import {
     Trash2,
     X,
 } from "lucide-react";
+
 import { useTasks } from "../context/TaskContext";
+import { useToast } from "../context/ToastContext";
 import useDocumentTitle from "../hooks/useDocumentTitle";
 
 const emptyForm = {
@@ -28,6 +30,7 @@ function TasksPage() {
     useDocumentTitle("My Tasks");
 
     const { tasks, addTask, toggleTask, deleteTask } = useTasks();
+    const { showToast } = useToast();
 
     const [searchTerm, setSearchTerm] = useState("");
     const [activeFilter, setActiveFilter] = useState("All");
@@ -107,6 +110,28 @@ function TasksPage() {
         setFormData(emptyForm);
         setFormError("");
         setIsModalOpen(false);
+
+        showToast("Task added successfully!", "success");
+    };
+
+    // Complete or reopen a task
+    const handleToggleTask = (task) => {
+        toggleTask(task.id);
+
+        showToast(
+            task.completed
+                ? "Task moved back to pending."
+                : "Task marked as completed!",
+            "success"
+        );
+    };
+
+    // Delete a task
+    const handleDeleteTask = (taskId) => {
+        deleteTask(taskId);
+        setOpenMenu(null);
+
+        showToast("Task deleted successfully!", "success");
     };
 
     // Close and reset modal
@@ -246,8 +271,8 @@ function TasksPage() {
                             type="button"
                             onClick={() => setActiveFilter(filter)}
                             className={`rounded-lg px-4 py-2 text-sm font-medium transition ${activeFilter === filter
-                                ? "bg-[var(--primary)] text-[var(--primary-foreground)]"
-                                : "text-[var(--muted)] hover:bg-[var(--surface-secondary)]"
+                                    ? "bg-[var(--primary)] text-[var(--primary-foreground)]"
+                                    : "text-[var(--muted)] hover:bg-[var(--surface-secondary)]"
                                 }`}
                         >
                             {filter === "All" ? "All Tasks" : filter}
@@ -287,7 +312,7 @@ function TasksPage() {
                                 <div className="flex items-start gap-4">
                                     <button
                                         type="button"
-                                        onClick={() => toggleTask(task.id)}
+                                        onClick={() => handleToggleTask(task)}
                                         aria-label={
                                             task.completed
                                                 ? "Mark as pending"
@@ -305,8 +330,8 @@ function TasksPage() {
                                     <div>
                                         <h3
                                             className={`text-sm font-semibold ${task.completed
-                                                ? "text-[var(--muted)] line-through"
-                                                : "text-[var(--foreground)]"
+                                                    ? "text-[var(--muted)] line-through"
+                                                    : "text-[var(--foreground)]"
                                                 }`}
                                         >
                                             {task.title}
@@ -351,10 +376,9 @@ function TasksPage() {
                                             <div className="absolute right-0 top-full z-10 mt-2 w-40 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-2 shadow-lg">
                                                 <button
                                                     type="button"
-                                                    onClick={() => {
-                                                        deleteTask(task.id);
-                                                        setOpenMenu(null);
-                                                    }}
+                                                    onClick={() =>
+                                                        handleDeleteTask(task.id)
+                                                    }
                                                     className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[var(--foreground)] transition hover:bg-[var(--surface-secondary)]"
                                                 >
                                                     <Trash2 size={16} />
